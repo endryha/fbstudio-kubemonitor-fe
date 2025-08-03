@@ -7,10 +7,10 @@ import { FileQuestion } from 'lucide-react';
 interface DeploymentListProps {
   deployments: DeploymentAggregate[];
   isLoading: boolean;
-  onCardClick: (deployment: DeploymentAggregate) => void;
+  onRowClick: (deployment: DeploymentAggregate) => void;
 }
 
-export function DeploymentList({ deployments, isLoading, onCardClick }: DeploymentListProps) {
+export function DeploymentList({ deployments, isLoading, onRowClick: onCardClick }: DeploymentListProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4">
@@ -43,3 +43,5 @@ export function DeploymentList({ deployments, isLoading, onCardClick }: Deployme
     </div>
   );
 }
+
+    

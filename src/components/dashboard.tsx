@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ChevronDown,
+  LayoutGrid,
+  List,
   ListFilter,
   RefreshCw,
   Search,
@@ -40,6 +42,7 @@ import {
 } from '@/components/ui/toggle-group';
 import { DeploymentDetail } from '@/components/deployment-detail';
 import { useToast } from '@/hooks/use-toast';
+import { DeploymentTable } from '@/components/deployment-table';
 
 const REFRESH_INTERVALS = {
   '10s': 10000,
@@ -51,6 +54,7 @@ const REFRESH_INTERVALS = {
 };
 
 type SortKey = 'lastDeployed' | 'name' | 'appVersion' | 'status';
+type ViewMode = 'card' | 'list';
 
 export default function Dashboard() {
   const [deployments, setDeployments] = useState<DeploymentAggregate[]>([]);
@@ -64,6 +68,7 @@ export default function Dashboard() {
   const [refreshInterval, setRefreshInterval] = useState<number>(30000);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedDeployment, setSelectedDeployment] = useState<DeploymentAggregate | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('card');
   const { toast } = useToast();
 
   const namespaces = useMemo(() => {
@@ -261,6 +266,21 @@ export default function Dashboard() {
         </Popover>
 
         <div className="flex-grow" />
+        
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={viewMode}
+          onValueChange={(value: ViewMode) => value && setViewMode(value)}
+          aria-label="View mode"
+        >
+          <ToggleGroupItem value="card" aria-label="Card view">
+            <LayoutGrid className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="list" aria-label="List view">
+            <List className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
 
         <div className="flex items-center gap-2">
           <Label htmlFor="sort-by" className="text-sm">Sort by:</Label>
@@ -290,6 +310,8 @@ export default function Dashboard() {
         </Alert>
       );
     }
+    
+    const ViewComponent = viewMode === 'list' ? DeploymentTable : DeploymentList;
 
     return (
       <Tabs defaultValue="services" className="w-full">
@@ -302,17 +324,17 @@ export default function Dashboard() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="services">
-          <DeploymentList
+          <ViewComponent
             deployments={serviceDeployments}
             isLoading={isLoading}
-            onCardClick={setSelectedDeployment}
+            onRowClick={setSelectedDeployment}
           />
         </TabsContent>
         <TabsContent value="infrastructure">
-          <DeploymentList
+          <ViewComponent
             deployments={infraDeployments}
             isLoading={isLoading}
-            onCardClick={setSelectedDeployment}
+            onRowClick={setSelectedDeployment}
           />
         </TabsContent>
       </Tabs>
@@ -333,3 +355,5 @@ export default function Dashboard() {
     </>
   );
 }
+
+    
