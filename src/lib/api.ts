@@ -17,5 +17,30 @@ export async function fetchDeployments(): Promise<DeploymentAggregate[]> {
     throw new Error('An unexpected error occurred while fetching data.');
   }
 
-  return JSON.parse(JSON.stringify(mockDeployments));
+  // Since we are now only fetching for a single namespace, we can filter the mock data
+  // In a real app, the API would handle this filtering
+  const currentNamespace = await fetchCurrentNamespace();
+  return JSON.parse(JSON.stringify(mockDeployments)).filter(
+    (d: DeploymentAggregate) => d.helm.k8sResource.namespace === currentNamespace
+  );
+}
+
+export async function fetchCurrentNamespace(): Promise<string> {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+
+  // In a real app, this would be an API call:
+  // const response = await fetch('http://localhost:39000/deployment-manager/api/v1/k8s/namespaces/current');
+  // if (!response.ok) {
+  //   throw new Error('Failed to fetch current namespace');
+  // }
+  // const data = await response.json();
+  // return data.namespace;
+
+  if (Math.random() < 0.05) { // 5% chance of failure
+    throw new Error('An unexpected error occurred while fetching the namespace.');
+  }
+  
+  // Return a consistent namespace from the mock data for demonstration
+  return "prod-services";
 }

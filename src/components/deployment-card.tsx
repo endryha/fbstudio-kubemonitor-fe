@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from 'date-fns';
-import { GitBranch, Layers, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -48,18 +48,6 @@ export function DeploymentCard({ deployment, onClick }: DeploymentCardProps) {
             Version: <span className="font-semibold text-foreground">{deployment.manifest.chartVersion}</span>
           </span>
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Layers className="h-4 w-4 text-primary/80" />
-          <span>
-            App Version: <span className="font-semibold text-foreground">{deployment.manifest.appVersion}</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <GitBranch className="h-4 w-4 text-primary/80" />
-          <span>
-            Namespace: <span className="font-semibold text-foreground">{deployment.helm.k8sResource.namespace}</span>
-          </span>
-        </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <span className="text-xs text-muted-foreground">
@@ -87,14 +75,6 @@ export function DeploymentCardSkeleton() {
         <Skeleton className="h-4 w-4/5" />
       </CardHeader>
       <CardContent className="flex-grow space-y-3">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4 rounded-full" />
-          <Skeleton className="h-4 w-1/2" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4 rounded-full" />
-          <Skeleton className="h-4 w-1/2" />
-        </div>
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-4 rounded-full" />
           <Skeleton className="h-4 w-1/2" />

@@ -6,15 +6,15 @@ import {
   ChevronDown,
   LayoutGrid,
   List,
-  ListFilter,
   RefreshCw,
   Search,
   Server,
   X,
+  Globe,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-import { fetchDeployments } from '@/lib/api';
+import { fetchDeployments, fetchCurrentNamespace } from '@/lib/api';
 import type { DeploymentAggregate, DeploymentStatus } from '@/types/deployment';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -30,11 +30,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KubeMonLogo } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { DeploymentList } from '@/components/deployment-list';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import {
   ToggleGroup,
@@ -43,6 +38,7 @@ import {
 import { DeploymentDetail } from '@/components/deployment-detail';
 import { useToast } from '@/hooks/use-toast';
 import { DeploymentTable } from '@/components/deployment-table';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const REFRESH_INTERVALS = {
   '10s': 10000,
@@ -58,23 +54,18 @@ type ViewMode = 'card' | 'list';
 
 export default function Dashboard() {
   const [deployments, setDeployments] = useState<DeploymentAggregate[]>([]);
+  const [currentNamespace, setCurrentNamespace] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<DeploymentStatus[]>([]);
-  const [namespaceFilter, setNamespaceFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortKey>('lastDeployed');
   const [refreshInterval, setRefreshInterval] = useState<number>(30000);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedDeployment, setSelectedDeployment] = useState<DeploymentAggregate | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const { toast } = useToast();
-
-  const namespaces = useMemo(() => {
-    const all = new Set(deployments.map(d => d.helm.k8sResource.namespace));
-    return ['all', ...Array.from(all)];
-  }, [deployments]);
 
   const fetchData = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) {
@@ -84,8 +75,12 @@ export default function Dashboard() {
     }
     setError(null);
     try {
-      const data = await fetchDeployments();
+      const [data, namespace] = await Promise.all([
+        fetchDeployments(),
+        fetchCurrentNamespace(),
+      ]);
       setDeployments(data);
+      setCurrentNamespace(namespace);
       setLastUpdated(new Date());
     } catch (e: any) {
       setError(e.message || 'An unknown error occurred.');
@@ -122,11 +117,6 @@ export default function Dashboard() {
         );
       })
       .filter(d => statusFilter.length === 0 || statusFilter.includes(d.status))
-      .filter(
-        d =>
-          namespaceFilter === 'all' ||
-          d.helm.k8sResource.namespace === namespaceFilter
-      )
       .sort((a, b) => {
         if (sortBy === 'lastDeployed') {
           return (
@@ -142,7 +132,7 @@ export default function Dashboard() {
         }
         return a.status.localeCompare(b.status);
       });
-  }, [deployments, searchTerm, statusFilter, namespaceFilter, sortBy]);
+  }, [deployments, searchTerm, statusFilter, sortBy]);
 
   const serviceDeployments = useMemo(
     () => filteredDeployments.filter(d => d.category === 'SERVICE'),
@@ -161,6 +151,14 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold font-headline tracking-tight">
             KubeMon
           </h1>
+          <div className="hidden md:flex items-center gap-2 border-l pl-4 ml-2">
+            <Globe className="h-5 w-5 text-accent" />
+            {currentNamespace ? (
+              <span className="text-lg font-medium text-muted-foreground font-code">{currentNamespace}</span>
+            ) : (
+              <Skeleton className="h-6 w-32" />
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {lastUpdated && (
@@ -227,46 +225,6 @@ export default function Dashboard() {
           <ToggleGroupItem value="PENDING_DEPLOYMENT" aria-label="Pending">Pending</ToggleGroupItem>
           <ToggleGroupItem value="FAILED" aria-label="Failed">Failed</ToggleGroupItem>
         </ToggleGroup>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-1">
-              <ListFilter className="h-4 w-4" />
-              Advanced
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <h4 className="font-medium leading-none">Advanced Filters</h4>
-                <p className="text-sm text-muted-foreground">
-                  Fine-tune your view.
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <div className="grid grid-cols-3 items-center gap-4">
-                  <Label htmlFor="namespace">Namespace</Label>
-                  <Select
-                    value={namespaceFilter}
-                    onValueChange={setNamespaceFilter}
-                  >
-                    <SelectTrigger id="namespace" className="col-span-2 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {namespaces.map(ns => (
-                        <SelectItem key={ns} value={ns}>
-                          {ns === 'all' ? 'All Namespaces' : ns}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
 
         <div className="flex-grow" />
         
