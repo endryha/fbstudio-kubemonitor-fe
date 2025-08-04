@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from 'date-fns';
-import { FileQuestion } from 'lucide-react';
+import { ArrowDown, ArrowUp, FileQuestion } from 'lucide-react';
 
 import type { DeploymentAggregate } from '@/types/deployment';
 import { Button } from '@/components/ui/button';
@@ -15,17 +15,25 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeploymentStatusBadge } from './deployment-status-badge';
+import { SortDirection, SortKey } from './dashboard';
+import { cn } from '@/lib/utils';
 
 interface DeploymentTableProps {
   deployments: DeploymentAggregate[];
   isLoading: boolean;
   onRowClick: (deployment: DeploymentAggregate) => void;
+  onSort: (key: SortKey) => void;
+  sortBy: SortKey;
+  sortDirection: SortDirection;
 }
 
 export function DeploymentTable({
   deployments,
   isLoading,
   onRowClick,
+  onSort,
+  sortBy,
+  sortDirection,
 }: DeploymentTableProps) {
   if (isLoading) {
     return (
@@ -66,15 +74,35 @@ export function DeploymentTable({
     );
   }
 
+  const SortableHeader = ({
+    sortKey,
+    children,
+  }: {
+    sortKey: SortKey;
+    children: React.ReactNode;
+  }) => {
+    const isSorted = sortBy === sortKey;
+    return (
+      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => onSort(sortKey)}>
+        <div className="flex items-center gap-2">
+          {children}
+          {isSorted && (
+            sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+          )}
+        </div>
+      </TableHead>
+    );
+  };
+
   return (
     <div className="border rounded-lg mt-4">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
+            <SortableHeader sortKey="name">Name</SortableHeader>
             <TableHead>Status</TableHead>
-            <TableHead>Version</TableHead>
-            <TableHead>Deployment time</TableHead>
+            <SortableHeader sortKey="chartVersion">Version</SortableHeader>
+            <SortableHeader sortKey="lastDeployed">Deployment time</SortableHeader>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

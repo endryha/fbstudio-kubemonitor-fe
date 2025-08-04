@@ -43,5 +43,3 @@ export function DeploymentList({ deployments, isLoading, onRowClick: onCardClick
     </div>
   );
 }
-
-    

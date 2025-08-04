@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
   LayoutGrid,
   List,
   RefreshCw,
@@ -15,6 +13,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { compareVersions } from 'compare-versions';
 
 import { fetchDeployments, fetchCurrentNamespace } from '@/lib/api';
 import type { DeploymentAggregate, DeploymentStatus } from '@/types/deployment';
@@ -52,8 +51,8 @@ const REFRESH_INTERVALS = {
   Off: 0,
 };
 
-type SortKey = 'lastDeployed' | 'name' | 'chartVersion' | 'status';
-type SortDirection = 'asc' | 'desc';
+export type SortKey = 'lastDeployed' | 'name' | 'chartVersion';
+export type SortDirection = 'asc' | 'desc';
 type ViewMode = 'list' | 'card';
 
 export default function Dashboard() {
@@ -102,7 +101,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (refreshInterval > 0) {
@@ -115,8 +115,39 @@ export default function Dashboard() {
     return allDeployments.filter(d => d.helm.k8sResource.namespace === currentNamespace);
   }, [allDeployments, currentNamespace]);
 
-  const filteredDeployments = useMemo(() => {
-    return [...deployments]
+  const filteredAndSortedDeployments = useMemo(() => {
+    const filtered = deployments
+      .filter(d => {
+        const search = searchTerm.toLowerCase();
+        return (
+          d.manifest.name.toLowerCase().includes(search) ||
+          d.helm.description.toLowerCase().includes(search) ||
+          d.manifest.chartVersion.toLowerCase().includes(search)
+        );
+      })
+      .filter(d => statusFilter.length === 0 || statusFilter.includes(d.status));
+      
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'lastDeployed':
+          comparison = new Date(a.helm.lastDeployed).getTime() - new Date(b.helm.lastDeployed).getTime();
+          break;
+        case 'name':
+          comparison = a.manifest.name.localeCompare(b.manifest.name);
+          break;
+        case 'chartVersion':
+          comparison = compareVersions(a.manifest.chartVersion, b.manifest.chartVersion);
+          break;
+      }
+      return sortDirection === 'desc' ? -comparison : comparison;
+    });
+
+    return sorted;
+  }, [deployments, searchTerm, statusFilter, sortBy, sortDirection]);
+  
+  const defaultSortedDeployments = useMemo(() => {
+     return [...deployments]
       .filter(d => {
         const search = searchTerm.toLowerCase();
         return (
@@ -127,38 +158,26 @@ export default function Dashboard() {
       })
       .filter(d => statusFilter.length === 0 || statusFilter.includes(d.status))
       .sort((a, b) => {
-        const aVal = a.helm.lastDeployed;
-        const bVal = b.helm.lastDeployed;
-        let comparison = 0;
-        switch (sortBy) {
-          case 'lastDeployed':
-            comparison = new Date(aVal).getTime() - new Date(bVal).getTime();
-            break;
-          case 'name':
-            comparison = a.manifest.name.localeCompare(b.manifest.name);
-            break;
-          case 'chartVersion':
-            comparison = a.manifest.chartVersion.localeCompare(b.manifest.chartVersion);
-            break;
-          case 'status':
-            comparison = a.status.localeCompare(b.status);
-            break;
-        }
-        return sortDirection === 'desc' ? -comparison : comparison;
+        return new Date(b.helm.lastDeployed).getTime() - new Date(a.helm.lastDeployed).getTime();
       });
-  }, [deployments, searchTerm, statusFilter, sortBy, sortDirection]);
+  }, [deployments, searchTerm, statusFilter]);
 
   const serviceDeployments = useMemo(
-    () => filteredDeployments.filter(d => d.category === 'SERVICE'),
-    [filteredDeployments]
+    () => (viewMode === 'list' ? filteredAndSortedDeployments : defaultSortedDeployments).filter(d => d.category === 'SERVICE'),
+    [filteredAndSortedDeployments, defaultSortedDeployments, viewMode]
   );
   const infraDeployments = useMemo(
-    () => filteredDeployments.filter(d => d.category === 'INFRASTRUCTURE'),
-    [filteredDeployments]
+    () => (viewMode === 'list' ? filteredAndSortedDeployments : defaultSortedDeployments).filter(d => d.category === 'INFRASTRUCTURE'),
+    [filteredAndSortedDeployments, defaultSortedDeployments, viewMode]
   );
   
-  const toggleSortDirection = () => {
-    setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+  const handleSort = (key: SortKey) => {
+    if (sortBy === key) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(key);
+      setSortDirection('desc');
+    }
   };
 
   const renderHeader = () => (
@@ -232,8 +251,7 @@ export default function Dashboard() {
             </Button>
           )}
         </div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-start md:justify-end gap-2 flex-grow">
             <ToggleGroup
               type="multiple"
               variant="outline"
@@ -268,41 +286,21 @@ export default function Dashboard() {
                 </ToggleGroup>
               </PopoverContent>
             </Popover>
-          </div>
           <Separator orientation="vertical" className="h-8 hidden sm:block"/>
-          <div className="flex items-center gap-2">
-             <ToggleGroup
-              type="single"
-              variant="outline"
-              value={viewMode}
-              onValueChange={(value: ViewMode) => value && setViewMode(value)}
-              aria-label="View mode"
-            >
-              <ToggleGroupItem value="card" aria-label="Card view">
-                <LayoutGrid className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label="List view">
-                <List className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
-
-            <div className="flex items-center gap-1">
-              <Select value={sortBy} onValueChange={(v: SortKey) => setSortBy(v)}>
-                <SelectTrigger id="sort-by" className="w-auto md:w-[150px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lastDeployed">Deployment time</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="chartVersion">Version</SelectItem>
-                  <SelectItem value="status">Status</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="icon" onClick={toggleSortDirection} className="h-10 w-10">
-                {sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={viewMode}
+            onValueChange={(value: ViewMode) => value && setViewMode(value)}
+            aria-label="View mode"
+          >
+            <ToggleGroupItem value="card" aria-label="Card view">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" aria-label="List view">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
       </div>
     </div>
@@ -319,8 +317,6 @@ export default function Dashboard() {
       );
     }
     
-    const ViewComponent = viewMode === 'list' ? DeploymentTable : DeploymentList;
-
     return (
       <Tabs defaultValue="services" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -332,18 +328,40 @@ export default function Dashboard() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="services">
-          <ViewComponent
-            deployments={serviceDeployments}
-            isLoading={isLoading}
-            onRowClick={setSelectedDeployment}
-          />
+          {viewMode === 'list' ? (
+             <DeploymentTable
+              deployments={serviceDeployments}
+              isLoading={isLoading}
+              onRowClick={setSelectedDeployment}
+              onSort={handleSort}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
+            />
+          ) : (
+            <DeploymentList
+              deployments={serviceDeployments}
+              isLoading={isLoading}
+              onRowClick={setSelectedDeployment}
+            />
+          )}
         </TabsContent>
         <TabsContent value="infrastructure">
-          <ViewComponent
-            deployments={infraDeployments}
-            isLoading={isLoading}
-            onRowClick={setSelectedDeployment}
-          />
+         {viewMode === 'list' ? (
+             <DeploymentTable
+              deployments={infraDeployments}
+              isLoading={isLoading}
+              onRowClick={setSelectedDeployment}
+              onSort={handleSort}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
+            />
+          ) : (
+            <DeploymentList
+              deployments={infraDeployments}
+              isLoading={isLoading}
+              onRowClick={setSelectedDeployment}
+            />
+          )}
         </TabsContent>
       </Tabs>
     );
