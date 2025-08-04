@@ -73,7 +73,7 @@ export function DeploymentTable({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>App Version</TableHead>
+            <TableHead>Version</TableHead>
             <TableHead>Namespace</TableHead>
             <TableHead>Last Deployed</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -86,7 +86,7 @@ export function DeploymentTable({
               <TableCell>
                 <DeploymentStatusBadge status={d.status} />
               </TableCell>
-              <TableCell>{d.manifest.appVersion}</TableCell>
+              <TableCell>{d.manifest.chartVersion}</TableCell>
               <TableCell>{d.helm.k8sResource.namespace}</TableCell>
               <TableCell>
                 {formatDistanceToNow(new Date(d.helm.lastDeployed), {
@@ -109,5 +109,3 @@ export function DeploymentTable({
     </div>
   );
 }
-
-    

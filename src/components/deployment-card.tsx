@@ -45,13 +45,13 @@ export function DeploymentCard({ deployment, onClick }: DeploymentCardProps) {
         <div className="flex items-center gap-2 text-muted-foreground">
           <Tag className="h-4 w-4 text-primary/80" />
           <span>
-            App: <span className="font-semibold text-foreground">{deployment.manifest.appVersion}</span>
+            Version: <span className="font-semibold text-foreground">{deployment.manifest.chartVersion}</span>
           </span>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Layers className="h-4 w-4 text-primary/80" />
           <span>
-            Chart: <span className="font-semibold text-foreground">{deployment.manifest.chartVersion}</span>
+            App Version: <span className="font-semibold text-foreground">{deployment.manifest.appVersion}</span>
           </span>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">

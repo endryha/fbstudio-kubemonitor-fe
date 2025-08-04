@@ -53,7 +53,7 @@ const REFRESH_INTERVALS = {
   Off: 0,
 };
 
-type SortKey = 'lastDeployed' | 'name' | 'appVersion' | 'status';
+type SortKey = 'lastDeployed' | 'name' | 'chartVersion' | 'status';
 type ViewMode = 'card' | 'list';
 
 export default function Dashboard() {
@@ -118,7 +118,7 @@ export default function Dashboard() {
         return (
           d.manifest.name.toLowerCase().includes(search) ||
           d.helm.description.toLowerCase().includes(search) ||
-          d.manifest.appVersion.toLowerCase().includes(search)
+          d.manifest.chartVersion.toLowerCase().includes(search)
         );
       })
       .filter(d => statusFilter.length === 0 || statusFilter.includes(d.status))
@@ -137,7 +137,10 @@ export default function Dashboard() {
         if (sortBy === 'name') {
           return a.manifest.name.localeCompare(b.manifest.name);
         }
-        return a[sortBy].localeCompare(b[sortBy]);
+        if (sortBy === 'chartVersion') {
+          return a.manifest.chartVersion.localeCompare(b.manifest.chartVersion);
+        }
+        return a.status.localeCompare(b.status);
       });
   }, [deployments, searchTerm, statusFilter, namespaceFilter, sortBy]);
 
@@ -291,7 +294,7 @@ export default function Dashboard() {
             <SelectContent>
               <SelectItem value="lastDeployed">Last Deployed</SelectItem>
               <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="appVersion">App Version</SelectItem>
+              <SelectItem value="chartVersion">Version</SelectItem>
               <SelectItem value="status">Status</SelectItem>
             </SelectContent>
           </Select>
@@ -355,5 +358,3 @@ export default function Dashboard() {
     </>
   );
 }
-
-    
