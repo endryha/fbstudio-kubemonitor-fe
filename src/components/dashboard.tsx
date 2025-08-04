@@ -48,7 +48,7 @@ const REFRESH_INTERVALS = {
   '30s': 30000,
   '1m': 60000,
   '5m': 300000,
-  '10m': 600000,
+  '10m': 60000,
   Off: 0,
 };
 
@@ -67,7 +67,7 @@ export default function Dashboard() {
   const [refreshInterval, setRefreshInterval] = useState<number>(30000);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedDeployment, setSelectedDeployment] = useState<DeploymentAggregate | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('card');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const { toast } = useToast();
 
   const fetchData = useCallback(async (isManualRefresh = false) => {

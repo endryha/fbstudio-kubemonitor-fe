@@ -33,7 +33,7 @@ export function DeploymentTable({
         <Table>
           <TableHeader>
             <TableRow>
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <TableHead key={i}>
                   <Skeleton className="h-5 w-24" />
                 </TableHead>
@@ -43,7 +43,7 @@ export function DeploymentTable({
           <TableBody>
             {Array.from({ length: 10 }).map((_, i) => (
               <TableRow key={i}>
-                {Array.from({ length: 6 }).map((_, j) => (
+                {Array.from({ length: 5 }).map((_, j) => (
                   <TableCell key={j}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
@@ -74,7 +74,6 @@ export function DeploymentTable({
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Version</TableHead>
-            <TableHead>Namespace</TableHead>
             <TableHead>Last Deployed</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -87,7 +86,6 @@ export function DeploymentTable({
                 <DeploymentStatusBadge status={d.status} />
               </TableCell>
               <TableCell>{d.manifest.chartVersion}</TableCell>
-              <TableCell>{d.helm.k8sResource.namespace}</TableCell>
               <TableCell>
                 {formatDistanceToNow(new Date(d.helm.lastDeployed), {
                   addSuffix: true,
