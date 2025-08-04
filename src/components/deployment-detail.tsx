@@ -88,7 +88,7 @@ export function DeploymentDetail({ deployment, isOpen, onOpenChange }: Deploymen
                   <DetailItem label="Name" value={deployment.helm.name} />
                   <DetailItem label="Status" value={deployment.helm.status} />
                   <DetailItem label="First Deployed" value={format(new Date(deployment.helm.firstDeployed), 'PPpp')} />
-                  <DetailItem label="Deployment time" value={format(new Date(deployment.helm.lastDeployed), 'PPpp')} />
+                  <DetailItem label="Last deployed" value={format(new Date(deployment.helm.lastDeployed), 'PPpp')} />
                 </section>
                 <section>
                   <h3 className="font-semibold text-lg font-headline flex items-center gap-2 mb-2"><Server className="h-5 w-5 text-primary" />Kubernetes Resource</h3>

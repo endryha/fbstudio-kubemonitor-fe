@@ -104,7 +104,7 @@ export function DeploymentTable({
             <SortableHeader sortKey="name">Name</SortableHeader>
             <SortableHeader sortKey="status">Status</SortableHeader>
             <SortableHeader sortKey="chartVersion">Version</SortableHeader>
-            <SortableHeader sortKey="lastDeployed">Deployment time</SortableHeader>
+            <SortableHeader sortKey="lastDeployed">Last deployed</SortableHeader>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
