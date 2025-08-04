@@ -47,11 +47,11 @@ const REFRESH_INTERVALS = {
   '30s': 30000,
   '1m': 60000,
   '5m': 300000,
-  '10m': 60000,
+  '10m': 600000,
   Off: 0,
 };
 
-export type SortKey = 'lastDeployed' | 'name' | 'chartVersion';
+export type SortKey = 'lastDeployed' | 'name' | 'chartVersion' | 'status';
 export type SortDirection = 'asc' | 'desc';
 type ViewMode = 'list' | 'card';
 
@@ -138,6 +138,9 @@ export default function Dashboard() {
           break;
         case 'chartVersion':
           comparison = compareVersions(a.manifest.chartVersion, b.manifest.chartVersion);
+          break;
+        case 'status':
+          comparison = a.status.localeCompare(b.status);
           break;
       }
       return sortDirection === 'desc' ? -comparison : comparison;

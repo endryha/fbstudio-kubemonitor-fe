@@ -77,13 +77,15 @@ export function DeploymentTable({
   const SortableHeader = ({
     sortKey,
     children,
+    className,
   }: {
     sortKey: SortKey;
     children: React.ReactNode;
+    className?: string;
   }) => {
     const isSorted = sortBy === sortKey;
     return (
-      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => onSort(sortKey)}>
+      <TableHead className={cn("cursor-pointer hover:bg-muted/50", className)} onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
           {children}
           {isSorted && (
@@ -100,7 +102,7 @@ export function DeploymentTable({
         <TableHeader>
           <TableRow>
             <SortableHeader sortKey="name">Name</SortableHeader>
-            <TableHead>Status</TableHead>
+            <SortableHeader sortKey="status">Status</SortableHeader>
             <SortableHeader sortKey="chartVersion">Version</SortableHeader>
             <SortableHeader sortKey="lastDeployed">Deployment time</SortableHeader>
             <TableHead className="text-right">Actions</TableHead>
