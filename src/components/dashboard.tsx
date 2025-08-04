@@ -5,51 +5,28 @@ import {
   AlertTriangle,
   LayoutGrid,
   List,
-  RefreshCw,
   Search,
-  Server,
   X,
-  Globe,
   Filter,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { compareVersions } from 'compare-versions';
 
-import { fetchDeployments, fetchCurrentNamespace } from '@/lib/api';
+import { fetchDeployments } from '@/lib/api';
 import type { DeploymentAggregate, DeploymentStatus } from '@/types/deployment';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { KubeMonLogo } from '@/components/icons';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { DeploymentList } from '@/components/deployment-list';
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@/components/ui/toggle-group';
 import { DeploymentDetail } from '@/components/deployment-detail';
-import { useToast } from '@/hooks/use-toast';
 import { DeploymentTable } from '@/components/deployment-table';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-
-const REFRESH_INTERVALS = {
-  '10s': 10000,
-  '30s': 30000,
-  '1m': 60000,
-  '5m': 300000,
-  '10m': 600000,
-  Off: 0,
-};
+import { Server } from 'lucide-react';
 
 export type SortKey = 'lastDeployed' | 'name' | 'chartVersion' | 'status';
 export type SortDirection = 'asc' | 'desc';
@@ -57,63 +34,38 @@ type ViewMode = 'list' | 'card';
 
 export default function Dashboard() {
   const [allDeployments, setAllDeployments] = useState<DeploymentAggregate[]>([]);
-  const [currentNamespace, setCurrentNamespace] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<DeploymentStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>('lastDeployed');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [refreshInterval, setRefreshInterval] = useState<number>(30000);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedDeployment, setSelectedDeployment] = useState<DeploymentAggregate | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const { toast } = useToast();
 
-  const fetchData = useCallback(async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setIsRefreshing(true);
-    } else if(!allDeployments.length) {
+  const fetchData = useCallback(async () => {
+    if (!allDeployments.length) {
       setIsLoading(true);
     }
     setError(null);
     try {
-      const [data, namespace] = await Promise.all([
-        fetchDeployments(),
-        fetchCurrentNamespace(),
-      ]);
+      const data = await fetchDeployments();
       setAllDeployments(data);
-      setCurrentNamespace(namespace);
-      setLastUpdated(new Date());
     } catch (e: any) {
       setError(e.message || 'An unknown error occurred.');
-      toast({
-        variant: 'destructive',
-        title: 'Failed to fetch data',
-        description: e.message,
-      });
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
-  }, [toast, allDeployments.length]);
+  }, [allDeployments.length]);
 
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (refreshInterval > 0) {
-      const intervalId = setInterval(() => fetchData(true), refreshInterval);
-      return () => clearInterval(intervalId);
-    }
-  }, [refreshInterval, fetchData]);
-
   const deployments = useMemo(() => {
-    return allDeployments.filter(d => d.helm.k8sResource.namespace === currentNamespace);
-  }, [allDeployments, currentNamespace]);
+    return allDeployments;
+  }, [allDeployments]);
 
   const filteredAndSortedDeployments = useMemo(() => {
     const filtered = deployments
@@ -186,53 +138,9 @@ export default function Dashboard() {
   const renderHeader = () => (
     <div className="flex flex-col gap-4 mb-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <KubeMonLogo className="h-10 w-10 text-primary" />
-          <h1 className="text-3xl font-bold font-headline tracking-tight">
-            KubeMon
+         <h1 className="text-3xl font-bold font-headline tracking-tight">
+            Deployments
           </h1>
-          <div className="hidden md:flex items-center gap-2 border-l pl-4 ml-2">
-            <Globe className="h-5 w-5 text-accent" />
-            {currentNamespace ? (
-              <span className="text-lg font-medium text-muted-foreground font-code">{currentNamespace}</span>
-            ) : (
-              <Skeleton className="h-6 w-32" />
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {lastUpdated && (
-            <span className="text-sm text-muted-foreground hidden md:inline">
-              Last updated: {formatDistanceToNow(lastUpdated, { addSuffix: true })}
-            </span>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => fetchData(true)}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={isRefreshing ? 'animate-spin' : ''} />
-          </Button>
-          <Select
-            defaultValue="30s"
-            onValueChange={value =>
-              setRefreshInterval(REFRESH_INTERVALS[value as keyof typeof REFRESH_INTERVALS])
-            }
-          >
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Refresh" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.keys(REFRESH_INTERVALS).map(interval => (
-                <SelectItem key={interval} value={interval}>
-                  {interval}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <ThemeToggle />
-        </div>
       </div>
       <div className="flex flex-col md:flex-row gap-2">
         <div className="relative flex-grow">
