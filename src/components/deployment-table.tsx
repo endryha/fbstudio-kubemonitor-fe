@@ -74,13 +74,13 @@ export function DeploymentTable({
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Version</TableHead>
-            <TableHead>Last Deployed</TableHead>
+            <TableHead>Deployment time</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {deployments.map(d => (
-            <TableRow key={d.id}>
+            <TableRow key={d.id} onClick={() => onRowClick(d)} className="cursor-pointer">
               <TableCell className="font-medium">{d.manifest.name}</TableCell>
               <TableCell>
                 <DeploymentStatusBadge status={d.status} />
@@ -95,7 +95,6 @@ export function DeploymentTable({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onRowClick(d)}
                 >
                   Details
                 </Button>

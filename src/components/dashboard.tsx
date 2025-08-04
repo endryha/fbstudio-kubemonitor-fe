@@ -75,7 +75,7 @@ export default function Dashboard() {
   const fetchData = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) {
       setIsRefreshing(true);
-    } else {
+    } else if(!allDeployments.length) {
       setIsLoading(true);
     }
     setError(null);
@@ -98,7 +98,7 @@ export default function Dashboard() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [toast]);
+  }, [toast, allDeployments.length]);
 
   useEffect(() => {
     fetchData();
@@ -292,7 +292,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="lastDeployed">Last Deployed</SelectItem>
+                  <SelectItem value="lastDeployed">Deployment time</SelectItem>
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="chartVersion">Version</SelectItem>
                   <SelectItem value="status">Status</SelectItem>
