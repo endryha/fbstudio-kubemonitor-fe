@@ -8,21 +8,23 @@ export async function fetchDeployments(): Promise<DeploymentAggregate[]> {
   // In a real app, this would be an API call:
   // const response = await fetch('http://localhost:39000/deployment-manager/api/v1/deployments');
   // if (!response.ok) {
-  //   throw new Error('Failed to fetch deployments');
+  //   const error = await response.json();
+  //   throw new Error(error.message || 'Failed to fetch deployments');
   // }
-  // return response.json();
+  // const data = await response.json();
+  // const allDeployments = [
+  //   ...data.deploymentsByCategory.SERVICE,
+  //   ...data.deploymentsByCategory.INFRASTRUCTURE,
+  // ];
+  // return allDeployments.map((d, index) => ({...d, id: `${d.helm.name}-${index}`}));
 
   // Simulate potential API errors
   if (Math.random() < 0.05) { // 5% chance of failure
     throw new Error('An unexpected error occurred while fetching data.');
   }
 
-  // Since we are now only fetching for a single namespace, we can filter the mock data
-  // In a real app, the API would handle this filtering
-  const currentNamespace = await fetchCurrentNamespace();
-  return JSON.parse(JSON.stringify(mockDeployments)).filter(
-    (d: DeploymentAggregate) => d.helm.k8sResource.namespace === currentNamespace
-  );
+  // Deep copy to prevent mutation of mock data across fetches
+  return JSON.parse(JSON.stringify(mockDeployments));
 }
 
 export async function fetchCurrentNamespace(): Promise<string> {
@@ -42,5 +44,5 @@ export async function fetchCurrentNamespace(): Promise<string> {
   }
   
   // Return a consistent namespace from the mock data for demonstration
-  return "prod-services";
+  return "tvg-us-apps-deploy";
 }

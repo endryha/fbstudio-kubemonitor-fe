@@ -11,6 +11,7 @@ import {
   Server,
   X,
   Globe,
+  Filter,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -39,6 +40,8 @@ import { DeploymentDetail } from '@/components/deployment-detail';
 import { useToast } from '@/hooks/use-toast';
 import { DeploymentTable } from '@/components/deployment-table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 
 const REFRESH_INTERVALS = {
   '10s': 10000,
@@ -53,7 +56,7 @@ type SortKey = 'lastDeployed' | 'name' | 'chartVersion' | 'status';
 type ViewMode = 'card' | 'list';
 
 export default function Dashboard() {
-  const [deployments, setDeployments] = useState<DeploymentAggregate[]>([]);
+  const [allDeployments, setAllDeployments] = useState<DeploymentAggregate[]>([]);
   const [currentNamespace, setCurrentNamespace] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -79,7 +82,7 @@ export default function Dashboard() {
         fetchDeployments(),
         fetchCurrentNamespace(),
       ]);
-      setDeployments(data);
+      setAllDeployments(data);
       setCurrentNamespace(namespace);
       setLastUpdated(new Date());
     } catch (e: any) {
@@ -105,6 +108,10 @@ export default function Dashboard() {
       return () => clearInterval(intervalId);
     }
   }, [refreshInterval, fetchData]);
+
+  const deployments = useMemo(() => {
+    return allDeployments.filter(d => d.helm.k8sResource.namespace === currentNamespace);
+  }, [allDeployments, currentNamespace]);
 
   const filteredDeployments = useMemo(() => {
     return deployments
@@ -194,68 +201,92 @@ export default function Dashboard() {
           <ThemeToggle />
         </div>
       </div>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input
-          placeholder="Search by name, description, version..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-        />
-        {searchTerm && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
-            onClick={() => setSearchTerm('')}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2 items-center">
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          value={statusFilter}
-          onValueChange={(value: DeploymentStatus[]) => setStatusFilter(value)}
-          aria-label="Filter by status"
-        >
-          <ToggleGroupItem value="DEPLOYED" aria-label="Deployed">Deployed</ToggleGroupItem>
-          <ToggleGroupItem value="PENDING_DEPLOYMENT" aria-label="Pending">Pending</ToggleGroupItem>
-          <ToggleGroupItem value="FAILED" aria-label="Failed">Failed</ToggleGroupItem>
-        </ToggleGroup>
+      <div className="flex flex-col md:flex-row gap-2">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, description, version..."
+            className="pl-10 w-full"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={() => setSearchTerm('')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ToggleGroup
+              type="multiple"
+              variant="outline"
+              value={statusFilter}
+              onValueChange={(value: DeploymentStatus[]) => setStatusFilter(value)}
+              aria-label="Filter by status"
+              className="hidden sm:flex"
+            >
+              <ToggleGroupItem value="DEPLOYED" aria-label="Deployed">Deployed</ToggleGroupItem>
+              <ToggleGroupItem value="PENDING_DEPLOYMENT" aria-label="Pending">Pending</ToggleGroupItem>
+              <ToggleGroupItem value="FAILED" aria-label="Failed">Failed</ToggleGroupItem>
+            </ToggleGroup>
+             <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="sm:hidden">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Status
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                 <ToggleGroup
+                  type="multiple"
+                  variant="outline"
+                  value={statusFilter}
+                  onValueChange={(value: DeploymentStatus[]) => setStatusFilter(value)}
+                  aria-label="Filter by status"
+                  className="flex-col"
+                >
+                  <ToggleGroupItem value="DEPLOYED" aria-label="Deployed" className="w-full justify-start">Deployed</ToggleGroupItem>
+                  <ToggleGroupItem value="PENDING_DEPLOYMENT" aria-label="Pending" className="w-full justify-start">Pending</ToggleGroupItem>
+                  <ToggleGroupItem value="FAILED" aria-label="Failed" className="w-full justify-start">Failed</ToggleGroupItem>
+                </ToggleGroup>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <Separator orientation="vertical" className="h-8 hidden sm:block"/>
+          <div className="flex items-center gap-2">
+             <ToggleGroup
+              type="single"
+              variant="outline"
+              value={viewMode}
+              onValueChange={(value: ViewMode) => value && setViewMode(value)}
+              aria-label="View mode"
+            >
+              <ToggleGroupItem value="card" aria-label="Card view">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
 
-        <div className="flex-grow" />
-        
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={viewMode}
-          onValueChange={(value: ViewMode) => value && setViewMode(value)}
-          aria-label="View mode"
-        >
-          <ToggleGroupItem value="card" aria-label="Card view">
-            <LayoutGrid className="h-4 w-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="list" aria-label="List view">
-            <List className="h-4 w-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
-
-        <div className="flex items-center gap-2">
-          <Label htmlFor="sort-by" className="text-sm">Sort by:</Label>
-          <Select value={sortBy} onValueChange={(v: SortKey) => setSortBy(v)}>
-            <SelectTrigger id="sort-by" className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="lastDeployed">Last Deployed</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="chartVersion">Version</SelectItem>
-              <SelectItem value="status">Status</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={sortBy} onValueChange={(v: SortKey) => setSortBy(v)}>
+              <SelectTrigger id="sort-by" className="w-auto md:w-[150px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lastDeployed">Last Deployed</SelectItem>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="chartVersion">Version</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
     </div>

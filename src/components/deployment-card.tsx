@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from 'date-fns';
-import { Tag } from 'lucide-react';
+import { Layers, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -41,9 +41,9 @@ export function DeploymentCard({ deployment, onClick }: DeploymentCardProps) {
           {deployment.helm.description}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow space-y-3 text-sm">
+      <CardContent className="flex-grow space-y-2 text-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Tag className="h-4 w-4 text-primary/80" />
+          <Layers className="h-4 w-4 text-primary/80" />
           <span>
             Version: <span className="font-semibold text-foreground">{deployment.manifest.chartVersion}</span>
           </span>
@@ -78,6 +78,10 @@ export function DeploymentCardSkeleton() {
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-4 rounded-full" />
           <Skeleton className="h-4 w-1/2" />
+        </div>
+         <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-4 w-2/3" />
         </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
