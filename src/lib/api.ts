@@ -18,11 +18,6 @@ export async function fetchDeployments(): Promise<DeploymentAggregate[]> {
   // ];
   // return allDeployments.map((d, index) => ({...d, id: `${d.helm.name}-${index}`}));
 
-  // Simulate potential API errors
-  if (Math.random() < 0.05) { // 5% chance of failure
-    throw new Error('An unexpected error occurred while fetching data.');
-  }
-
   // Deep copy to prevent mutation of mock data across fetches
   return JSON.parse(JSON.stringify(mockDeployments));
 }
@@ -38,10 +33,6 @@ export async function fetchCurrentNamespace(): Promise<string> {
   // }
   // const data = await response.json();
   // return data.namespace;
-
-  if (Math.random() < 0.05) { // 5% chance of failure
-    throw new Error('An unexpected error occurred while fetching the namespace.');
-  }
   
   // Return a consistent namespace from the mock data for demonstration
   return "tvg-us-apps-deploy";
