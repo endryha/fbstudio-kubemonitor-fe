@@ -29,34 +29,43 @@ export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "ui-theme",
+  attribute = "class",
+  enableSystem = true,
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = React.useState<Theme>(
-    () => (typeof window !== 'undefined' && localStorage.getItem(storageKey) as Theme) || defaultTheme
-  )
+  const [theme, setTheme] = React.useState<Theme>(() => {
+    if (typeof window === 'undefined') {
+      return defaultTheme;
+    }
+    try {
+      return (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    } catch (e) {
+      return defaultTheme
+    }
+  });
 
   React.useEffect(() => {
     const root = window.document.documentElement
-
     root.classList.remove("light", "dark")
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
+    let finalTheme = theme;
+    if (theme === "system" && enableSystem) {
+      finalTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light"
-
-      root.classList.add(systemTheme)
-      return
     }
 
-    root.classList.add(theme)
-  }, [theme])
+    root.classList.add(finalTheme)
+  }, [theme, enableSystem])
 
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
+      try {
+        localStorage.setItem(storageKey, theme)
+      } catch (e) {
+        // ignore
+      }
       setTheme(theme)
     },
   }
